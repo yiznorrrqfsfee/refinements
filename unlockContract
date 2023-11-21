@@ -1,0 +1,70 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract EnhancedStorageETH {
+    address public owner;
+    string public storedData;
+    uint256 public creationTimestamp;
+    bool public isLocked;
+    uint256 public unlockTimestamp;
+    mapping(address => bool) public allowedUsers;
+
+    event DataStored(address indexed user, string data);
+    event DataDeleted(address indexed deleter);
+    event ContractLocked(address indexed locker, uint256 unlockTimestamp);
+    event UserPermissionChanged(address indexed user, bool isAllowed);
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only the owner can call this function");
+        _;
+    }
+
+    modifier notLocked() {
+        require(!isLocked, "Contract is locked and data cannot be modified");
+        _;
+    }
+
+    modifier onlyAllowedUser() {
+        require(allowedUsers[msg.sender], "Caller is not an allowed user");
+        _;
+    }
+
+    constructor() {
+        owner = msg.sender;
+        creationTimestamp = block.timestamp;
+        isLocked = false;
+        unlockTimestamp = 0;
+        allowedUsers[owner] = true;
+    }
+
+    function set(string memory newData) external onlyAllowedUser notLocked {
+        storedData = newData;
+        emit DataStored(msg.sender, newData);
+    }
+
+    function get() external view returns (string memory) {
+        return storedData;
+    }
+
+    function deleteData() external onlyOwner notLocked {
+        delete storedData;
+        emit DataDeleted(msg.sender);
+    }
+
+    function lockContract(uint256 duration) external onlyOwner {
+        isLocked = true;
+        unlockTimestamp = block.timestamp + duration;
+        emit ContractLocked(msg.sender, unlockTimestamp);
+    }
+
+    function unlockContract() external onlyOwner {
+        isLocked = false;
+        unlockTimestamp = 0;
+        emit ContractLocked(msg.sender, unlockTimestamp);
+    }
+
+    function changeUserPermission(address user, bool allow) external onlyOwner {
+        allowedUsers[user] = allow;
+        emit UserPermissionChanged(user, allow);
+    }
+}
