@@ -1,0 +1,28 @@
+# ContractA.starknet
+
+balances: map(uint256, uint256)
+
+@public
+@payable
+def deposit():
+    # Handle deposit logic
+    balances[msg.sender] += msg.value
+
+@public
+def sendToB(message: int):
+    # Call ContractB's receiveMessage method to send a message
+    invoke_contract("0xContractBAddress", "receiveMessage(uint256)", message)
+
+@public
+def checkBalance():
+    # Check the current balance of the caller
+    return balances[msg.sender]
+
+@public
+def withdraw(amount: uint256):
+    # Handle withdrawal logic
+    require(balances[msg.sender] >= amount, "Insufficient balance")
+    balances[msg.sender] -= amount
+    msg.sender.transfer(amount)
+    # Emit an event for transparency
+    event Withdrawal(msg.sender, amount)
